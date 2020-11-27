@@ -1,0 +1,70 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+# 2. Hausaufgabe
+
+```{r}
+library(tidyverse)
+```
+ 
+## Beziehung zwischen Anzahl der Bücher/Verlag und deren Bewertungen
+###Neue Tabelle mit ISBN und Verlag
+```{r}
+ISBNPublisher <- BX_Books %>%
+  select(ISBN, Publisher)
+```
+
+###Anzahl der Bücher pro Verlag
+```{r}
+AnzahlBooks <- BX_Books %>%
+  select(Publisher, ISBN) %>%
+  group_by(Publisher) %>%
+  summarise(AnzahlDerBücher = n())
+```
+
+###Zusammenführen von Bücher und deren Bewertungen
+```{r}
+gemeinsam <- merge(BX_Book_Ratings, BX_Books)
+```
+
+###Die Bewertungen der Bücher, sortiert nach Verlag
+```{r}
+AnzahlRatings <- merge(BX_Book_Ratings, BX_Books) %>%
+  group_by(Publisher) %>%
+  summarise(AnzahlDerRatings = n())
+```
+
+###Relation der Anzahl von Büchern und Bewertungen
+```{r}
+Relation <- merge(AnzahlBooks, AnzahlRatings) %>%
+  select(AnzahlDerBücher, AnzahlDerRatings)
+```
+
+```{r}
+plot(Relation)
+```
+
+
+## Zeitalter der Bücher und der Einfluss auf deren Bewertung
+###Veröffentlichung und ISBN 
+```{r}
+AlterBooks <- BX_Books %>%
+  select(`Year-Of-Publication`, ISBN) %>%
+  group_by(`Year-Of-Publication`) %>%
+  summarise(AlterDerBücher = n())
+  
+```
+###Einfließen der Bewertung der Bücher 
+```{r}
+AlterBooks <- merge(BX_Books, BX_Book_Ratings) %>%
+  group_by(`Year-Of-Publication`) %>%
+  summarise(BucherInDemJahr = n()) %>%
+  filter(`Year-Of-Publication` > 1500)
+```
+
+```{r}
+plot(AlterBooks)
+```
+
