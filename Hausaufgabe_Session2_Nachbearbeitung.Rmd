@@ -1,0 +1,127 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+# 2. Hausaufgabe
+
+```{r}
+library(tidyverse)
+```
+
+#Daten laden 
+```{r}
+BX_Users <- read_delim("BX-Users.csv", ";", 
+    escape_double = FALSE, trim_ws = TRUE)
+BX_Book_Ratings <- read_delim("BX-Book-Ratings.csv", ";", 
+    escape_double = FALSE, trim_ws = TRUE)
+BX_Books <- read_delim("BX-Books.csv", ";", 
+    escape_double = FALSE, trim_ws = TRUE)
+```
+
+ 
+#Daten säubern und transformieren 
+
+### BX_Books auf das Notwendigste reduizieren
+```{r}
+books <- BX_Books %>%
+  select(ISBN,`Book-Title`,`Book-Author`,`Year-Of-Publication`,Publisher)
+```
+```{r}
+ISBNPublisher <- BX_Books %>%
+  select(ISBN, Publisher)
+```
+```{r}
+ISBNPublication <-BX_Books %>%
+  select(ISBN, `Year-Of-Publication`)
+```
+
+### BX_Books_Ratings auf das Notwendigste reduizieren
+```{r}
+ratings <- BX_Book_Ratings %>%
+  left_join(books)
+```
+
+### Ratings zusammenbauen für das Zusammenzählen der Bewertungen
+```{r}
+bestRatings <- ratings %>%
+  group_by(ISBN) %>%
+  summarise(Durchschnittsbewertung = mean(`Book-Rating`), AnzahlBewertungen = n()) %>%
+  filter(AnzahlBewertungen > 5)
+```
+
+### Durchschnittsbewertungen der Verlage
+```{r}
+VerlagRatings <- merge(BX_Books, bestRatings) %>%
+  select(AnzahlBewertungen, Publisher) %>%
+  group_by(Publisher) %>%
+  summarise(AnzahlBewertungen = n()) %>%
+  arrange(desc(AnzahlBewertungen))
+```
+
+
+# Beziehung zwischen Anzahl der Bücher/Verlag und deren Bewertungen
+##Gibt es eine lineare Beziehung zwischen Anzahl Bücher pro Publisher und Anzahl Ratings, die die Bücher eines Publishers erhalten?
+
+###Anzahl der Bücher pro Verlag
+```{r}
+AnzahlBooks <- BX_Books %>%
+  select(Publisher, ISBN) %>%
+  group_by(Publisher) %>%
+  summarise(AnzahlDerBücher = n())
+```
+
+###Zusammenführen von Bücher und deren Bewertungen / Die Bewertungen der Bücher, sortiert nach Verlag
+```{r}
+AnzahlRatings <- merge(BX_Book_Ratings, BX_Books) %>%
+  group_by(Publisher) %>%
+  summarise(AnzahlDerRatings = n())
+```
+
+###Relation der Anzahl von Büchern und Bewertungen
+```{r}
+Relation <- merge(AnzahlBooks, AnzahlRatings) %>%
+  select(AnzahlDerBücher, AnzahlDerRatings)
+```
+
+```{r}
+plot(Relation)
+```
+
+```{r}
+scatter.smooth(y=Relation$AnzahlDerBücher, x=Relation$AnzahlDerRatings)
+```
+```{r}
+summary(Relation)
+```
+
+# Zeitalter der Bücher und der Einfluss auf deren Bewertung
+## Haben ältere Bücher mehr Ratings, weil sie mehr Zeit haben, um Ratings zu sammeln?
+
+###Veröffentlichung und ISBN 
+```{r}
+AlterBooks <- merge(BX_Books, BX_Book_Ratings) %>%
+  group_by(`Year-Of-Publication`) %>%
+  summarise(BewertungenImJahr = n()) %>%
+  filter(`Year-Of-Publication` > 1500)
+```
+
+```{r}
+plot(AlterBooks)
+```
+
+###Einfließen der Anzahl an Bewertungen der Bücher 
+```{r}
+AlterBooks2 <- merge(BX_Book_Ratings, BX_Books) %>%
+  group_by(`ISBN`) %>%
+  summarise(AnzahlBewertungenAlter = n ())
+```
+```{r}
+BucherJahr <-merge(AlterBooks2, ISBNPublication) %>%
+  select(`Year-Of-Publication`, AnzahlBewertungenAlter)
+```
+
+
+
+
+
